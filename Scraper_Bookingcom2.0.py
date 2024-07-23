@@ -117,17 +117,27 @@ def scrape_all_pages(driver, base_url, max_hotels):
             print(Fore.GREEN + f"Reached the maximum limit of {max_hotels} unique hotels. Stopping scrape.")
             break
 
-        try:
-            # Re-find the "Load more results" button before each click
-            load_more_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'dba1b3bddf') and contains(@class, 'e99c25fd33') and contains(@class, 'ea757ee64b') and contains(@class, 'f1c8772a7d') and contains(@class, 'ea220f5cdc') and contains(@class, 'f870aa1234')]"))
-            )
-            load_more_button.click()
-            print(Fore.CYAN + "Load more button clicked.")
-            time.sleep(5)  # Give time for the next set of results to load
-        except Exception as e:
-            print(Fore.RED + f"Error while trying to click 'Load more results' button: {e}")
-            break
+        retry_count = 0
+        max_retries = 5
+        while retry_count < max_retries:
+            try:
+                # Re-find the "Load more results" button before each click
+                load_more_button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'dba1b3bddf') and contains(@class, 'e99c25fd33') and contains(@class, 'ea757ee64b') and contains(@class, 'f1c8772a7d') and contains(@class, 'ea220f5cdc') and contains(@class, 'f870aa1234')]"))
+                )
+                load_more_button.click()
+                print(Fore.CYAN + "Load more button clicked.")
+                time.sleep(5)  # Give time for the next set of results to load
+                break  # Exit the retry loop if successful
+            except Exception as e:
+                retry_count += 1
+                print(Fore.RED + f"Error while trying to click 'Load more results' button: {e}")
+                if retry_count < max_retries:
+                    print(Fore.YELLOW + f"Retrying... ({retry_count}/{max_retries})")
+                    time.sleep(30)  # Wait for 30 seconds before retrying
+                else:
+                    print(Fore.RED + "Max retries reached. Stopping scrape.")
+                    return all_hotels
         
         cooldown_attempts = 0  # Reset cooldown attempts after successful scrape
         time.sleep(1)  # A bit of delay to avoid overloading the server
