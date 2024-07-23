@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -53,20 +54,8 @@ def scrape_page(driver, scraped_names):
         if name in scraped_names:
             continue  # Skip duplicates
         
-        try:
-            location = hotel.find('span', attrs={'data-testid': 'address'}).text.strip()
-        except AttributeError:
-            location = 'N/A'
-
-        try:
-            price = hotel.find('span', attrs={'data-testid': 'price-and-discounted-price'}).text.strip()
-        except AttributeError:
-            price = 'N/A'
-        
         hotels.append({
             'Name': name,
-            'Location': location,
-            'Price': price
         })
         scraped_names.add(name)  # Add the name to the set of scraped names
     
@@ -90,8 +79,13 @@ def scrape_all_pages(driver, base_url, max_hotels):
     while True:
         print_header()
         print(Fore.YELLOW + "Scraping page...")
-        scroll_to_bottom(driver)
-        hotels = scrape_page(driver, scraped_names)
+        try:
+            scroll_to_bottom(driver)
+            hotels = scrape_page(driver, scraped_names)
+        except Exception as e:
+            print(Fore.RED + f"Error during scraping: {e}")
+            time.sleep(30)
+            continue
         
         if not hotels:
             if cooldown_attempts == 0:
@@ -136,8 +130,12 @@ def scrape_all_pages(driver, base_url, max_hotels):
                     print(Fore.YELLOW + f"Retrying... ({retry_count}/{max_retries})")
                     time.sleep(30)  # Wait for 30 seconds before retrying
                 else:
-                    print(Fore.RED + "Max retries reached. Stopping scrape.")
-                    return all_hotels
+                    user_input = input(Fore.RED + "Max retries reached. Do you want to retry? (yes/no): ").strip().lower()
+                    if user_input == 'yes':
+                        retry_count = 0  # Reset retry count if user wants to retry
+                    else:
+                        print(Fore.RED + "Stopping scrape.")
+                        return all_hotels
         
         cooldown_attempts = 0  # Reset cooldown attempts after successful scrape
         time.sleep(1)  # A bit of delay to avoid overloading the server
