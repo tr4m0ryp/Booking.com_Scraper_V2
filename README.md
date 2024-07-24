@@ -1,6 +1,6 @@
 # Booking.com Hotel Scraper V2
 
-A Python script to scrapes accomandation information from Booking.com search results using Selenium and BeautifulSoup.
+A Python script to scrapes accomandation information from Booking.com search results using Selenium and BeautifulSoup. Usefull to create bulk email-lists (see repo; Email_Scraper)
 
 ## Requirements
 
